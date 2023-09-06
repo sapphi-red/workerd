@@ -1,0 +1,83 @@
+name: Manual Build
+
+on: workflow_dispatch
+
+jobs:
+  version:
+    outputs:
+      version: ${{ steps.echo.outputs.version }}
+    # version job uses ubuntu 22.04, this way we don't have to install the updated clang while
+    # the build job uses 20.04 for libc compatibility.
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/bazel-disk-cache
+          key: capnp-cache-${{ runner.os }}-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE') }}
+      - name: build capnp
+        run: |
+          bazel build --disk_cache=~/bazel-disk-cache @capnp-cpp//src/capnp:capnp_tool
+      - id: echo
+        run: |
+          echo "::set-output name=version::1.$(bazel-bin/external/capnp-cpp/src/capnp/capnp_tool eval src/workerd/io/compatibility-date.capnp supportedCompatibilityDate | tr -d '-' | tr -d '"').0"
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-latest, windows-2022]
+        include:
+          - os-name: linux
+            os: ubuntu-20.04
+          - os-name: macOS
+            os: macos-latest
+          - os-name: windows
+            os: windows-2022
+    runs-on: ${{ matrix.os }}
+    name: build (${{ matrix.os-name }})
+    steps:
+      - uses: actions/checkout@v3
+      - name: Cache
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: ~/bazel-disk-cache
+          # Use a different cache key than for tests here, otherwise the release cache could end up
+          # being used for test builds, where it provides little benefit.
+          key: bazel-disk-cache-release-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.bazelversion', '.bazelrc', 'WORKSPACE') }}
+      - name: Setup Linux
+        if: runner.os == 'Linux'
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 14
+          sudo apt-get install -y libunwind-14 libc++abi1-14 libc++1-14 libc++-14-dev
+          echo "build:linux --action_env=CC=/usr/lib/llvm-14/bin/clang --action_env=CXX=/usr/lib/llvm-14/bin/clang++" >> .bazelrc
+          echo "build:linux --host_action_env=CC=/usr/lib/llvm-14/bin/clang --host_action_env=CXX=/usr/lib/llvm-14/bin/clang++" >> .bazelrc
+      - name: Setup Windows
+        if: runner.os == 'Windows'
+        run: |
+          [System.IO.File]::WriteAllLines((Join-Path -Path $env:USERPROFILE -ChildPath '.bazelrc'), 'startup --output_user_root=C:/tmp')
+          # Upgrade to LLVM 16.0.6, default install is currently 15 (https://github.com/actions/runner-images/issues/8125).
+          # When we need to upgrade beyond LLVM 16.0.6, ${WORKSPACE}/.bazelrc will need updating.
+          choco upgrade llvm --version=16.0.6
+          # Work around bazel clang 16 include path bug (https://github.com/bazelbuild/bazel/issues/17863)
+          Move-Item -Path "C:\Program Files\LLVM\lib\clang\16" -Destination "C:\Program Files\LLVM\lib\clang\16.0.6"
+      - name: Bazel build
+        run: |
+          bazelisk build --disk_cache=~/bazel-disk-cache -c opt //src/workerd/server:workerd
+      - name: Strip debug symbols
+        if: runner.os != 'Windows'
+        run: |
+          # bazel makes the output directory read-only, fix permissions for binary
+          chmod +w bazel-bin/src/workerd/server/workerd
+          # Strip debug information from the binary, this is acceptable as debug symbols are not
+          # generated for the release configuration. Regular symbols are still included.
+          strip -S bazel-bin/src/workerd/server/workerd
+      - name: Upload binary
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ${{ runner.os }}-${{ runner.arch }}-binary
+          path: bazel-bin/src/workerd/server/workerd${{ runner.os == 'Windows' && '.exe' || '' }}
