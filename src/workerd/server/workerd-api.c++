@@ -26,6 +26,7 @@
 #include <workerd/api/r2.h>
 #include <workerd/api/r2-admin.h>
 #include <workerd/api/trace.h>
+#include <workerd/api/unsafe.h>
 #include <workerd/api/urlpattern.h>
 #include <workerd/api/node/node.h>
 #include <workerd/io/promise-wrapper.h>
@@ -83,6 +84,7 @@ JSG_DECLARE_ISOLATE_TYPE(JsgWorkerdIsolate,
   EW_SQL_ISOLATE_TYPES,
   EW_NODE_ISOLATE_TYPES,
   EW_RTTI_ISOLATE_TYPES,
+  EW_UNSAFE_ISOLATE_TYPES,
 #ifdef WORKERD_EXPERIMENTAL_ENABLE_WEBGPU
   EW_WEBGPU_ISOLATE_TYPES,
 #endif

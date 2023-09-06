@@ -8,6 +8,7 @@
 #include <workerd/api/rtti.h>
 #include <workerd/api/sockets.h>
 #include <cloudflare/cloudflare.capnp.h>
+#include <workerd/api/unsafe.h>
 
 namespace workerd::api {
 
@@ -18,6 +19,9 @@ void registerModules(Registry& registry, auto featureFlags) {
   }
   if (featureFlags.getRttiApi()) {
     registerRTTIModule(registry);
+  }
+  if (featureFlags.getUnsafe()) {
+    registerUnsafeModule(registry);
   }
   registerSocketsModule(registry, featureFlags);
   registry.addBuiltinBundle(CLOUDFLARE_BUNDLE);

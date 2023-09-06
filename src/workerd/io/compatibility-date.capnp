@@ -344,4 +344,8 @@ struct CompatibilityFlags @0x8f8c1b68151b6cef {
   webgpu @35 :Bool
       $compatEnableFlag("webgpu")
       $experimental;
+
+  unsafe @36 :Bool
+      $compatEnableFlag("unsafe");
+  # Enables the `workerd:unsafe` module that enables runtime code generation for development.
 }

@@ -25,6 +25,7 @@
 #include <workerd/api/sql.h>
 #include <workerd/api/streams/standard.h>
 #include <workerd/api/trace.h>
+#include <workerd/api/unsafe.h>
 #include <workerd/api/urlpattern.h>
 #include <workerd/api/node/node.h>
 #include <workerd/jsg/modules.capnp.h>
@@ -66,6 +67,7 @@
   F("sockets", EW_SOCKETS_ISOLATE_TYPES)                                       \
   F("node", EW_NODE_ISOLATE_TYPES)                                             \
   F("rtti", EW_RTTI_ISOLATE_TYPES)                                             \
+  F("unsafe", EW_UNSAFE_ISOLATE_TYPES)                                         \
   F("webgpu", EW_WEBGPU_ISOLATE_TYPES)
 
 namespace workerd::api {

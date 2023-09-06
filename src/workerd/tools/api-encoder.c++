@@ -32,6 +32,7 @@
 #include <workerd/api/sql.h>
 #include <workerd/api/streams/standard.h>
 #include <workerd/api/trace.h>
+#include <workerd/api/unsafe.h>
 #include <workerd/api/urlpattern.h>
 #include <workerd/api/node/node.h>
 
@@ -64,7 +65,8 @@
   F("websocket", EW_WEBSOCKET_ISOLATE_TYPES)                                   \
   F("sql", EW_SQL_ISOLATE_TYPES)                                               \
   F("sockets", EW_SOCKETS_ISOLATE_TYPES)                                       \
-  F("node", EW_NODE_ISOLATE_TYPES)
+  F("node", EW_NODE_ISOLATE_TYPES)                                             \
+  F("unsafe", EW_UNSAFE_ISOLATE_TYPES)
 
 namespace workerd::api {
 namespace {
@@ -253,4 +255,3 @@ private:
 KJ_MAIN(workerd::api::ApiEncoderMain);
 
 #endif // !API_ENCODER_HDRS_ONLY
-
